@@ -4,7 +4,7 @@ import json
 import os
 
 # Вставь свой токен
-TOKEN = '8055975981:AAHo-Tv7XoWqXqWge_-tkgbYSAgupF0vm0U'
+TOKEN = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(TOKEN)
 
 # 📁 Файл для хранения данных пользователей
