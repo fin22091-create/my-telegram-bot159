@@ -9,7 +9,7 @@ import os
 import os
 TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
-    TOKEN = 'ТВОЙ_ТОКЕН_ЗДЕСЬ'  # для локального теста
+    TOKEN = '8055975981:AAHo-Tv7XoWqXqWge_-tkgbYSAgupF0vm0U'  # для локального теста
 
 bot = telebot.TeleBot(TOKEN)
 
