@@ -5,11 +5,11 @@ import random
 import os
 
 # Вставь свой токен (из переменной окружения)
-# обновление для теста2
+# обновление для теста3
 import os
 TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
-    TOKEN = '8055975981:AAHo-Tv7XoWqXqWge_-tkgbYSAgupF0vm0U'  # для локального теста
+    TOKEN = '8055975981:AAHo-Tv7XoWqXqWge_-tkgbYSAgupF0vm0U'  
 
 bot = telebot.TeleBot(TOKEN)
 
