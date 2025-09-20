@@ -7,7 +7,7 @@ import random
 import os
 
 # Вставь свой токен (из переменной окружения)
-# обновление для теста4
+# обновление для теста5
 import os
 TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
