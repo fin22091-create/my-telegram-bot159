@@ -1,3 +1,5 @@
+import time
+time.sleep(5)  # Ждём 5 секунд перед запуском
 import telebot
 from telebot import types
 import sqlite3
