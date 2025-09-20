@@ -145,4 +145,4 @@ def play_again(message):
 # Запуск бота
 if __name__ == '__main__':
     init_db()  # Инициализируем базу при запуске
-    bot.infinity_polling(timeout=10, long_polling_timeout=5)
+    bot.infinity_polling(timeout=10, long_polling_timeout=5, skip_pending=True)
