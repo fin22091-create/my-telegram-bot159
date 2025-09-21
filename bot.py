@@ -1,5 +1,3 @@
-import telebot
-import os
 import time
 import threading
 import random
@@ -8,6 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask
 from telebot import types
 import logging
+import os
 
 # =======================
 # 🔧 НАСТРОЙКИ
@@ -15,7 +14,7 @@ import logging
 
 TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
-    raise ValueError("❌ BOT_TOKEN не установлен. Добавь его в Environment Variables на Render.")
+    raise ValueError("❌ BOT_TOKEN не установлен. Добавь его в Environment Variables.")
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL:
@@ -205,7 +204,7 @@ def health():
 # =======================
 
 def run_bot():
-    time.sleep(3)
+    time.sleep(5)  # Даём время на завершение предыдущего процесса
     try:
         bot.infinity_polling(timeout=10, long_polling_timeout=5, skip_pending=True)
     except Exception as e:
