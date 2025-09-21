@@ -12,7 +12,7 @@ import logging
 # 🔧 НАСТРОЙКИ
 # =======================
 
-# тест 1.2
+# тест 1.3
 
 TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
