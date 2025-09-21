@@ -12,6 +12,8 @@ import logging
 # 🔧 НАСТРОЙКИ
 # =======================
 
+# тест 1.2
+
 TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
     raise ValueError("❌ BOT_TOKEN не установлен. Добавь его в Environment Variables на Render.")
