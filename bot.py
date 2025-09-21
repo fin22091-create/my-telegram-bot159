@@ -1,17 +1,14 @@
-import time
-time.sleep(5)  # Ждём 5 секунд перед запуском
 import telebot
 from telebot import types
 import sqlite3
 import random
 import os
+import time  # time импортируем здесь, но используем только в конце
 
 # Вставь свой токен (из переменной окружения)
-# обновление для теста5
-import os
 TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
-    TOKEN = '8055975981:AAHo-Tv7XoWqXqWge_-tkgbYSAgupF0vm0U'  
+    TOKEN = '8055975981:AAHo-Tv7XoWqXqWge_-tkgbYSAgupF0vm0U'
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -146,5 +143,10 @@ def play_again(message):
 
 # Запуск бота
 if __name__ == '__main__':
-    init_db()  # Инициализируем базу при запуске
-    bot.infinity_polling(timeout=10, long_polling_timeout=5, skip_pending=True)
+    try:
+        print(f"🚀 Запущен процесс с PID: {os.getpid()}")
+        init_db()  # Инициализируем базу при запуске
+        time.sleep(5)  # Даём 5 секунд, чтобы старый процесс точно умер
+        bot.infinity_polling(timeout=10, long_polling_timeout=5, skip_pending=True)
+    except Exception as e:
+        print(f"❌ Критическая ошибка при запуске: {e}")
