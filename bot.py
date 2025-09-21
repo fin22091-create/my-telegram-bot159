@@ -204,7 +204,7 @@ def health():
 # =======================
 
 def run_bot():
-    time.sleep(5)  # Даём время на завершение предыдущего процесса
+    time.sleep(10)  # Даём время на завершение предыдущего процесса
     try:
         bot.infinity_polling(timeout=10, long_polling_timeout=5, skip_pending=True)
     except Exception as e:
