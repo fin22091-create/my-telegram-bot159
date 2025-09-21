@@ -3,7 +3,8 @@ import os
 import time
 import threading
 import random
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from flask import Flask
 from telebot import types
 import logging
@@ -12,51 +13,90 @@ import logging
 # 🔧 НАСТРОЙКИ
 # =======================
 
-# тест 1.3
-
 TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
     raise ValueError("❌ BOT_TOKEN не установлен. Добавь его в Environment Variables на Render.")
 
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    raise ValueError("❌ DATABASE_URL не установлен. Добавь его в Environment Variables.")
+
 bot = telebot.TeleBot(TOKEN)
 
 # =======================
-# 🗃️ БАЗА ДАННЫХ
+# 🗃️ ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ
 # =======================
 
 def init_db():
-    conn = sqlite3.connect('game.db')
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cursor = conn.cursor()
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
+            user_id BIGINT PRIMARY KEY,
             name TEXT,
             best_score INTEGER DEFAULT 0
         )
     ''')
+
     conn.commit()
+    cursor.close()
     conn.close()
 
+# =======================
+# 💾 ФУНКЦИИ РАБОТЫ С БАЗОЙ
+# =======================
+
 def save_user(user_id, name):
-    conn = sqlite3.connect('game.db')
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT OR REPLACE INTO users (user_id, name, best_score)
-        VALUES (?, ?, COALESCE((SELECT best_score FROM users WHERE user_id = ?), 0))
+        INSERT INTO users (user_id, name, best_score)
+        VALUES (%s, %s, COALESCE((SELECT best_score FROM users WHERE user_id = %s), 0))
+        ON CONFLICT (user_id) DO UPDATE
+        SET name = EXCLUDED.name
     ''', (user_id, name, user_id))
     conn.commit()
+    cursor.close()
     conn.close()
 
 def update_score(user_id, attempts):
-    conn = sqlite3.connect('game.db')
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cursor = conn.cursor()
-    cursor.execute('SELECT best_score FROM users WHERE user_id = ?', (user_id,))
+    cursor.execute('SELECT best_score FROM users WHERE user_id = %s', (user_id,))
     result = cursor.fetchone()
     current_best = result[0] if result and result[0] > 0 else None
+
     if not current_best or attempts < current_best:
-        cursor.execute('UPDATE users SET best_score = ? WHERE user_id = ?', (attempts, user_id))
+        cursor.execute('UPDATE users SET best_score = %s WHERE user_id = %s', (attempts, user_id))
+
     conn.commit()
+    cursor.close()
     conn.close()
+
+def get_user_score(user_id):
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    cursor = conn.cursor()
+    cursor.execute('SELECT best_score FROM users WHERE user_id = %s', (user_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return result[0] if result else None
+
+def get_top_players(limit=10):
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        SELECT name, best_score
+        FROM users
+        WHERE best_score > 0
+        ORDER BY best_score ASC
+        LIMIT %s
+    ''', (limit,))
+    results = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return results
 
 # =======================
 # 🤖 ЛОГИКА БОТА
@@ -120,14 +160,10 @@ def guess_number(message):
 @bot.message_handler(func=lambda message: message.text == "🏆 Мой счёт")
 def show_score(message):
     user_id = message.from_user.id
-    conn = sqlite3.connect('game.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT best_score FROM users WHERE user_id = ?', (user_id,))
-    result = cursor.fetchone()
-    conn.close()
+    score = get_user_score(user_id)
 
-    if result and result[0] > 0:
-        bot.reply_to(message, f"🏆 Твой лучший результат: {result[0]} попыток")
+    if score and score > 0:
+        bot.reply_to(message, f"🏆 Твой лучший результат: {score} попыток")
     else:
         bot.reply_to(message, "Ты ещё не угадал число. Нажми 'Начать игру'!")
 
@@ -138,25 +174,15 @@ def play_again(message):
 @bot.message_handler(commands=['top'])
 @bot.message_handler(func=lambda message: message.text == "🏅 Топ-10")
 def show_top_players(message):
-    conn = sqlite3.connect('game.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT name, best_score
-        FROM users
-        WHERE best_score > 0
-        ORDER BY best_score ASC
-        LIMIT 10
-    ''')
-    results = cursor.fetchall()
-    conn.close()
+    results = get_top_players(10)
 
     if not results:
         bot.reply_to(message, "Пока нет рекордов. Сыграй и установи свой!")
         return
 
     text = "🏆 *ТОП-10 ЛУЧШИХ ИГРОКОВ*\n\n"
-    for i, (name, score) in enumerate(results, 1):
-        text += f"{i}. {name} — {score} попыток\n"
+    for i, row in enumerate(results, 1):
+        text += f"{i}. {row['name']} — {row['best_score']} попыток\n"
 
     bot.reply_to(message, text, parse_mode="Markdown")
 
@@ -168,11 +194,11 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "✅ Telegram Bot with Game is running! Port is open.", 200
+    return "✅ Telegram Bot with PostgreSQL is running! Port is open.", 200
 
 @app.route('/health')
 def health():
-    return {"status": "ok", "message": "Game bot is alive"}, 200
+    return {"status": "ok", "message": "Game bot with DB is alive"}, 200
 
 # =======================
 # 🚀 ЗАПУСК БОТА В ОТДЕЛЬНОМ ПОТОКЕ
