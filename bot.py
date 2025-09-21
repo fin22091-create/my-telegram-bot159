@@ -1,4 +1,6 @@
 import time
+time.sleep(10) 
+# ждем 10 секунд перед запуском
 import threading
 import random
 import psycopg2
